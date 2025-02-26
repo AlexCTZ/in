@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobby</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #player-box {
+            width: 50%;
+            margin: auto;
+            border: 1px solid black;
+            padding: 10px;
+        }
+        #player-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #player-list li {
+            background-color: lightblue;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        #start-button {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h2>En attente des joueurs...</h2>
+    <h3>Joueurs connectés : <span id="player-count">0</span></h3>
+
+    <div id="player-box">
+        <h3>Liste des joueurs</h3>
+        <ul id="player-list"></ul>
+    </div>
+
+    <button id="start-button" style="display: none;" onclick="startGame()">Lancer la partie</button>
+
+    <script>
+        const socket = io();
+        let isHost = false;
+
+        // Met à jour la liste des joueurs
+        socket.on("update players", (players) => {
+            const playerList = document.getElementById("player-list");
+            const playerCount = document.getElementById("player-count");
+
+            playerList.innerHTML = "";
+            players.forEach(player => {
+                const li = document.createElement("li");
+                li.textContent = player;
+                playerList.appendChild(li);
+            });
+
+            playerCount.textContent = players.length;
+
+            // Si je suis le premier joueur, je peux lancer la partie
+            if (!isHost && players.length > 0 && players[0] === sessionStorage.getItem("username")) {
+                isHost = true;
+                document.getElementById("start-button").style.display = "block";
+            }
+        });
+
+        // Quand on clique sur "Lancer la partie"
+        function startGame() {
+            socket.emit("start game");
+        }
+
+        // Redirection de tous les joueurs vers le chat quand la partie démarre
+        socket.on("game started", () => {
+            window.location.href = "index.html";
+        });
+
+        // Récupérer le pseudo stocké en session
+        socket.on("set username", (username) => {
+            sessionStorage.setItem("username", username);
+        });
+    </script>
+</body>
+</html>
