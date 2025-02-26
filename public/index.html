@@ -1,67 +1,26 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>L'Incognito</title>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #game-container { flex-grow: 1; }
-        
-        #player-box {
-            width: 100%; 
-            height: auto; 
-            border: 1px solid black; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 5px;
-            margin-bottom: 10px;
-        }
-    
-        #player-list {
-            list-style-type: none; 
-            padding: 0; 
-            display: flex; 
-            gap: 10px;
-        }
-    
-        #player-list li {
-            background-color: lightblue;
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-    
-        #chat-box {
-            width: 500px; 
-            height: 600px; 
-            border: 1px solid black; 
-            overflow-y: auto; 
-            margin: 10px auto; 
-            padding: 5px;
-        }
-    
-        input { width: 200px; }
-    </style>
-    
-</head>
-<body>
-    <h2 id="player-name">Connexion...</h2>
+<script>
+    const socket = io();
+    let username = "Joueur";
 
-    <div id="game-container"></div>
+    // Récupère le pseudo stocké quand la partie a démarré
+    const usernames = JSON.parse(sessionStorage.getItem("usernames") || "[]");
+    if (usernames.length > 0) {
+        username = usernames[Math.floor(Math.random() * usernames.length)];
+        document.getElementById("player-name").innerText = `Vous êtes : ${username}`;
+    }
 
-    <div id="player-box">
-        <h3>Joueurs connectés: </h3>
-        <ul id="player-list"></ul>
-    </div>
+    // Gestion du tchat
+    function sendMessage() {
+        const msg = document.getElementById("chat-input").value.trim();
+        if (msg) {
+            socket.emit("chat message", { username, msg });
+            document.getElementById("chat-input").value = "";
+        }
+    }
 
-    <div id="chat-box"></div>
-    
-    <input id="chat-input" type="text" placeholder="Écrire un message..." onkeydown="if(event.key==='Enter') sendMessage()">
-    <button onclick="sendMessage()">Envoyer</button>
-
-    <script src="game.js"></script>
-</body>
-</html>
+    socket.on("chat message", ({ username, msg }) => {
+        const chatBox = document.getElementById("chat-box");
+        chatBox.innerHTML += `<p><strong>${username}</strong> : ${msg}</p>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+</script>

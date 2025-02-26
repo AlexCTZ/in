@@ -32,7 +32,11 @@
     </style>
 </head>
 <body>
-    <h2>En attente des joueurs...</h2>
+    <h2>Bienvenue ! Entrez votre vrai nom :</h2>
+    <input type="text" id="realname-input" placeholder="Votre vrai nom">
+    <button onclick="registerName()">Confirmer</button>
+
+    <h3 id="waiting-text" style="display:none;">En attente des joueurs...</h3>
     <h3>Joueurs connectés : <span id="player-count">0</span></h3>
 
     <div id="player-box">
@@ -45,6 +49,17 @@
     <script>
         const socket = io();
         let isHost = false;
+
+        function registerName() {
+            const realname = document.getElementById("realname-input").value.trim();
+            if (realname) {
+                sessionStorage.setItem("realname", realname);
+                socket.emit("register name", realname);
+                document.getElementById("realname-input").style.display = "none";
+                document.querySelector("button").style.display = "none";
+                document.getElementById("waiting-text").style.display = "block";
+            }
+        }
 
         // Met à jour la liste des joueurs
         socket.on("update players", (players) => {
@@ -61,7 +76,7 @@
             playerCount.textContent = players.length;
 
             // Si je suis le premier joueur, je peux lancer la partie
-            if (!isHost && players.length > 0 && players[0] === sessionStorage.getItem("username")) {
+            if (!isHost && players.length > 0 && players[0] === sessionStorage.getItem("realname")) {
                 isHost = true;
                 document.getElementById("start-button").style.display = "block";
             }
@@ -72,14 +87,11 @@
             socket.emit("start game");
         }
 
-        // Redirection de tous les joueurs vers le chat quand la partie démarre
-        socket.on("game started", () => {
+        // Redirection vers le jeu avec les pseudos
+        socket.on("game started", (pseudoMap) => {
+            sessionStorage.setItem("pseudoMap", JSON.stringify(pseudoMap));
+            sessionStorage.setItem("pseudo", pseudoMap[sessionStorage.getItem("realname")]);
             window.location.href = "index.html";
-        });
-
-        // Récupérer le pseudo stocké en session
-        socket.on("set username", (username) => {
-            sessionStorage.setItem("username", username);
         });
     </script>
 </body>

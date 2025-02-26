@@ -8,11 +8,11 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-const players = {};
+const players = {}; // Stocke les vrais noms et pseudos
 const usedUsernames = new Set(); // Pseudos déjà utilisés
 let gameStarted = false;
 
-// Génère un pseudo aléatoire
+// Génère un pseudo aléatoire unique
 function generateUniqueUsername() {
     const nouns = ['Hervé', 'Adam', 'Lucien', 'Julie', 'Sonya', 'Roger', 'Jean', 'Arthur', 'Léa', 'Marvin'];
     
@@ -26,36 +26,59 @@ function generateUniqueUsername() {
     return username;
 }
 
+// Met à jour la liste des joueurs côté client
 function updatePlayersList() {
-    io.emit("update players", Object.values(players));
+    io.emit("update players", Object.values(players).map(p => p.realName || "En attente..."));
 }
 
 io.on('connection', (socket) => {
     if (gameStarted) {
-        socket.emit("game started"); // Rediriger les nouveaux joueurs directement vers le jeu s'il est déjà lancé
+        socket.emit("game started"); // Redirige les nouveaux joueurs si le jeu est en cours
         return;
     }
 
-    const username = generateUniqueUsername();
-    players[socket.id] = username;
-    socket.emit('set username', username);
-    
-    console.log(`Nouvel utilisateur : ${username} (ID: ${socket.id})`);
+    console.log(`Nouvelle connexion (ID: ${socket.id})`);
 
-    updatePlayersList();
+    // Étape 1 : Demander le vrai nom au joueur
+    socket.emit("request real name");
 
+    socket.on("send real name", (realName) => {
+        if (!realName) return;
+
+        players[socket.id] = { realName, username: null }; // On stocke le vrai nom
+        console.log(`Joueur enregistré : ${realName}`);
+        
+        updatePlayersList();
+    });
+
+    // Quand l'hôte clique sur "Lancer la partie"
+    socket.on("start game", () => {
+        if (gameStarted) return;
+        gameStarted = true;
+
+        // Attribution des pseudos à chaque joueur
+        Object.keys(players).forEach((id) => {
+            players[id].username = generateUniqueUsername();
+        });
+
+        io.emit("game started", Object.values(players).map(p => p.username)); // Envoie les pseudos aux joueurs
+    });
+
+    // Gestion du tchat
     socket.on('chat message', ({ username, msg }) => {
         io.emit('chat message', { username, msg });
     });
 
     // Déconnexion
     socket.on('disconnect', () => {
-        usedUsernames.delete(players[socket.id]);
-        delete players[socket.id];
-        updatePlayersList();
+        if (players[socket.id]) {
+            usedUsernames.delete(players[socket.id].username);
+            delete players[socket.id];
+            updatePlayersList();
+        }
     });
 });
 
 server.listen(3000, '192.168.154.113', () => {
-    console.log('Serveur démarré sur http://192.168.154.113:3000');
+    console.log('Serveur démarré sur http://x:3000');
 });

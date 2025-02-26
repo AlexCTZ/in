@@ -1,10 +1,8 @@
 const socket = io();
-let username = "Joueur"; // Par défaut
 
-socket.on("set username", (name) => {
-    username = name;
-    document.getElementById("player-name").innerText = `Vous êtes : ${username}`;
-});
+// Récupérer le pseudo attribué
+let pseudo = sessionStorage.getItem("pseudo");
+document.getElementById("player-name").innerText = `Vous êtes : ${pseudo}`;
 
 // Gestion du tchat
 const chatInput = document.getElementById("chat-input");
@@ -13,17 +11,17 @@ const chatBox = document.getElementById("chat-box");
 function sendMessage() {
     const msg = chatInput.value.trim();
     if (msg) {
-        socket.emit("chat message", { username, msg }); // Envoie un objet avec le pseudo et le message
+        socket.emit("chat message", { pseudo, msg }); // Envoie un objet avec le pseudo et le message
         chatInput.value = "";
     }
 }
 
-socket.on("chat message", ({ username, msg }) => {
-    chatBox.innerHTML += `<p><strong>${username}</strong> : ${msg}</p>`;
+socket.on("chat message", ({ pseudo, msg }) => {
+    chatBox.innerHTML += `<p><strong>${pseudo}</strong> : ${msg}</p>`;
     chatBox.scrollTop = chatBox.scrollHeight; // Scroll auto vers le bas
 });
 
-// Mise à jour de la liste des joueurs connectés
+// Mise à jour de la liste des joueurs connectés avec les pseudos
 const playerList = document.getElementById("player-list");
 
 socket.on("update players", (players) => {
