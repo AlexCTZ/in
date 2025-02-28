@@ -1,26 +1,44 @@
-<script>
-    const socket = io();
-    let username = "Joueur";
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu</title>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1>Jeu en cours</h1>
+    <h2 id="player-name"></h2>
 
-    // Récupère le pseudo stocké quand la partie a démarré
-    const usernames = JSON.parse(sessionStorage.getItem("usernames") || "[]");
-    if (usernames.length > 0) {
-        username = usernames[Math.floor(Math.random() * usernames.length)];
-        document.getElementById("player-name").innerText = `Vous êtes : ${username}`;
-    }
+    <div id="chat-box" style="border: 1px solid black; height: 200px; overflow-y: auto; padding: 10px;"></div>
+    <input type="text" id="chat-input" placeholder="Écrire un message...">
+    <button onclick="sendMessage()">Envoyer</button>
 
-    // Gestion du tchat
-    function sendMessage() {
-        const msg = document.getElementById("chat-input").value.trim();
-        if (msg) {
-            socket.emit("chat message", { username, msg });
-            document.getElementById("chat-input").value = "";
+    <script>
+        const socket = io();
+        let username = "Joueur";
+
+        // Récupère le pseudo stocké quand la partie a démarré
+        const usernames = JSON.parse(sessionStorage.getItem("usernames") || "[]");
+        if (usernames.length > 0) {
+            username = usernames[Math.floor(Math.random() * usernames.length)];
+            document.getElementById("player-name").innerText = `Vous êtes : ${username}`;
         }
-    }
 
-    socket.on("chat message", ({ username, msg }) => {
-        const chatBox = document.getElementById("chat-box");
-        chatBox.innerHTML += `<p><strong>${username}</strong> : ${msg}</p>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-    });
-</script>
+        // Gestion du tchat
+        function sendMessage() {
+            const msg = document.getElementById("chat-input").value.trim();
+            if (msg) {
+                socket.emit("chat message", { username, msg });
+                document.getElementById("chat-input").value = "";
+            }
+        }
+
+        socket.on("chat message", ({ username, msg }) => {
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML += `<p><strong>${username}</strong> : ${msg}</p>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    </script>
+</body>
+</html>

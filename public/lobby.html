@@ -4,64 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lobby</title>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #player-box {
-            width: 50%;
-            margin: auto;
-            border: 1px solid black;
-            padding: 10px;
-        }
-        #player-list {
-            list-style-type: none;
-            padding: 0;
-        }
-        #player-list li {
-            background-color: lightblue;
-            padding: 5px 10px;
-            border-radius: 5px;
-            margin: 5px;
-        }
-        #start-button {
-            margin-top: 20px;
-            padding: 10px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <h2>Bienvenue ! Entrez votre vrai nom :</h2>
-    <input type="text" id="realname-input" placeholder="Votre vrai nom">
-    <button onclick="registerName()">Confirmer</button>
+    <h1>Lobby</h1>
+    <p>Joueurs connectés : <span id="player-count">0</span></p>
+    <ul id="player-list"></ul>
 
-    <h3 id="waiting-text" style="display:none;">En attente des joueurs...</h3>
-    <h3>Joueurs connectés : <span id="player-count">0</span></h3>
-
-    <div id="player-box">
-        <h3>Liste des joueurs</h3>
-        <ul id="player-list"></ul>
-    </div>
-
-    <button id="start-button" style="display: none;" onclick="startGame()">Lancer la partie</button>
+    <button onclick="startGame()">Lancer la partie</button>
 
     <script>
         const socket = io();
-        let isHost = false;
+        let realName = "";
 
-        function registerName() {
-            const realname = document.getElementById("realname-input").value.trim();
-            if (realname) {
-                sessionStorage.setItem("realname", realname);
-                socket.emit("register name", realname);
-                document.getElementById("realname-input").style.display = "none";
-                document.querySelector("button").style.display = "none";
-                document.getElementById("waiting-text").style.display = "block";
-            }
-        }
+        // Demande le vrai nom au joueur
+        socket.on("request real name", () => {
+            realName = prompt("Entrez votre vrai nom :");
+            socket.emit("send real name", realName);
+            sessionStorage.setItem("realName", realName);
+        });
 
-        // Met à jour la liste des joueurs
+        // Mise à jour de la liste des joueurs
         socket.on("update players", (players) => {
             const playerList = document.getElementById("player-list");
             const playerCount = document.getElementById("player-count");
@@ -74,23 +37,16 @@
             });
 
             playerCount.textContent = players.length;
-
-            // Si je suis le premier joueur, je peux lancer la partie
-            if (!isHost && players.length > 0 && players[0] === sessionStorage.getItem("realname")) {
-                isHost = true;
-                document.getElementById("start-button").style.display = "block";
-            }
         });
 
-        // Quand on clique sur "Lancer la partie"
+        // Lancement de la partie
         function startGame() {
             socket.emit("start game");
         }
 
-        // Redirection vers le jeu avec les pseudos
-        socket.on("game started", (pseudoMap) => {
-            sessionStorage.setItem("pseudoMap", JSON.stringify(pseudoMap));
-            sessionStorage.setItem("pseudo", pseudoMap[sessionStorage.getItem("realname")]);
+        // Passage au jeu
+        socket.on("game started", (usernames) => {
+            sessionStorage.setItem("usernames", JSON.stringify(usernames));
             window.location.href = "index.html";
         });
     </script>

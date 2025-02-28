@@ -33,7 +33,7 @@ function updatePlayersList() {
 
 io.on('connection', (socket) => {
     if (gameStarted) {
-        socket.emit("game started"); // Redirige les nouveaux joueurs si le jeu est en cours
+        socket.emit("game started");
         return;
     }
 
@@ -51,17 +51,17 @@ io.on('connection', (socket) => {
         updatePlayersList();
     });
 
-    // Quand l'hôte clique sur "Lancer la partie"
+    // Lancement de la partie
     socket.on("start game", () => {
         if (gameStarted) return;
         gameStarted = true;
 
-        // Attribution des pseudos à chaque joueur
+        // Attribution des pseudos
         Object.keys(players).forEach((id) => {
             players[id].username = generateUniqueUsername();
         });
 
-        io.emit("game started", Object.values(players).map(p => p.username)); // Envoie les pseudos aux joueurs
+        io.emit("game started", Object.values(players).map(p => p.username));
     });
 
     // Gestion du tchat
