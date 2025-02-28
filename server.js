@@ -66,8 +66,10 @@ io.on('connection', (socket) => {
 
     // Gestion du tchat
     socket.on('chat message', ({ username, msg }) => {
+        console.log(`Message reçu de ${username} : ${msg}`);
         io.emit('chat message', { username, msg });
     });
+    
 
     // Déconnexion
     socket.on('disconnect', () => {
